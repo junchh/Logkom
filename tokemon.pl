@@ -3,16 +3,24 @@
 :- dynamic(battle/1).
 :- dynamic(tokemonpos/3).
 :- dynamic(encounter/1).
+:- dynamic(battleid/2).
 
-init_tokemon :- init_tokemon(1).
+init_tokemon :- init_tokemon(1), asserta(encounter(0)), asserta(battle(0)).
 init_tokemon(ID) :- (ID < 10 -> (randomize, width(W), height(H), random(0,W,X), random(0,H,Y), 
             ((\+ block(X,Y), \+ player(X,Y), \+ gym(X,Y), \+ tokemonpos(_,X,Y)) -> asserta(health(ID,100,100)),asserta(tokemonpos(ID,X,Y)), ID1 is ID + 1, init_tokemon(ID1); init_tokemon(ID)));
             !).
 
-encounter :- ((player(X,Y), tokemonpos(_,X,Y)) -> asserta(encounter(1)); !),!.
+encounter :- ((player(X,Y), tokemonpos(_,X,Y)) -> asserta(encounter(1)),retract(encounter(0)); !),!.
 
-fight :- (encounter(1) -> init_battle ; !).
-flee :- encounter(1).
+fight :- (encounter(1) -> write('Choose your tokemon!'),nl,nl, avail_tokemon, init_battle,! ; !).
+flee :- randomize, random(0, 10, RN),((RN > 4, encounter(1)) -> retract(encounter(1)), asserta(encounter(0)), write('You successfully escaped the Tokemon!') ; write('You failed to run!'),nl,fight).
+
+avail_tokemon :- inventory(L), write('Available Tokemons: ['), avail_tokemon(L), write(']').
+avail_tokemon([ID|[]]) :- tokemon(ID,Nama,_,_), write(Nama),!.
+avail_tokemon([ID|L]) :- tokemon(ID,Nama,_,_), write(Nama), write(', '), avail_tokemon(L).
+
+
+pick(Nama) :- (tokemon(ID, Nama, _,_) -> (inventory(L), (memberchk(ID, L) -> player(X,Y), tokemonpos(ID2,X,Y), asserta(battleid(ID,ID2)), write('You: "'), write(Nama), write(' I choose you!"') ; write('You don\'t have that tokemon.'))) ; write('Tokemon doesn\'t exist')).
 
 tokemon(1, groudon, fire, legendary).
 tokemon(2, charizard, fire, normal).
@@ -44,7 +52,7 @@ spdamage(7,100).
 spdamage(8,100).
 spdamage(9,100).
 
-init_battle :- asserta(usespattack(0)), retract(battle(0)), asserta(battle(1)).
+init_battle :- (battle(0) -> asserta(usespattack(0)), retract(battle(0)), asserta(battle(1)) ; !).
 
 attack(ID1,ID2) :- battle(X),(X = 1 -> (attackdamage(ID1,Dmg), health(ID2,Currhealth,Maxhealth), 
             (Currhealth =< Dmg -> Newhealth is 0 ; Newhealth is Currhealth - Dmg),
