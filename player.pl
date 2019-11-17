@@ -11,5 +11,3 @@ d :- (encounter(0) -> (player(X,Y), X1 is X+1, (\+ block(X1,Y) -> asserta(player
 heal :- ((player(X,Y), gym(X,Y)) -> heal(_) ; write('Command tidak dapat digunakan'),nl).
 
 heal(_) :- !.
-
-capture :- battleid(_,ID2), inventory([L]), length([L], N), ( N < 6 -> asserta(inventory([L|ID2])) ; write('Drop tokemon first'),nl).
