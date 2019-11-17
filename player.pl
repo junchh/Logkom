@@ -15,6 +15,8 @@ d :- (encounter(0) -> (player(X,Y), X1 is X+1, (\+ block(X1,Y) -> asserta(player
 
 
 check_fail :- (fail(1) -> write('Aril: Ho ho ho. You have failed to complete the missions. As for now, meet your fate and disappear from this world!');!),!.
+check_win :- (forall(tokemon(ID,_,_,legendary), tokemon_fainted(ID)) -> asserta(win(1)) ; fail).
+win :- write('Aril: Congratulation!!! You have helped me in defeating or capturing the 2 Legendary Tokemons. As promised, I won’t kill you and you’re free!'),!.
 
 heal :- ((player(X,Y), gym(X,Y)) -> inventory(L), heal_inventory(L) ; write('Command tidak dapat digunakan'),nl).
 heal_inventory([]) :- !.
