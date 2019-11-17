@@ -3,23 +3,266 @@
 :- dynamic(fail/1).
 :- dynamic(win/1).
 
-random_starter :- randomize, random(0,10,ID), tokemon(ID,_,_,X), (X \= legendary -> asserta(starter(ID))  ; random_starter),!.
+random_starter :-
+    (not_available(0) ->
+        randomize, 
+        random(1,9,ID), 
+        tokemon(ID,_,_,X), 
+        (X \= legendary -> 
+            asserta(starter(ID))  
+        ; 
+            random_starter
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-init_player :- width(W), height(H), randomize, random(0,W,X), random(0,H,Y), ((\+ block(X,Y), \+ gym(X,Y)) -> asserta(player(X,Y)),random_starter,starter(ID), asserta(inventory([ID])), asserta(fail(0)),! ; init_player,!).
+init_player :-
+    (not_available(0) ->
+        width(W), 
+        height(H), 
+        randomize, 
+        random(0,W,X), 
+        random(0,H,Y), 
+        ((\+ block(X,Y), \+ gym(X,Y)) -> 
+            asserta(player(X,Y)),
+            random_starter,
+            starter(ID),
+            asserta(inventory([ID])), 
+            asserta(fail(0)) 
+        ; 
+            init_player
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-w :- (encounter(0) -> (player(X,Y), Y1 is Y-1, (\+ block(X,Y1) -> asserta(player(X,Y1)), retract(player(X,Y)) ; write('Tidak Bisa')), (\+ tokemonpos(_,X,Y1) -> refresh_tokemonpos(1),! ; write('A wild Tokemon appears!'),nl,write('Fight or Run?'),nl,encounter)) ; (write('Can\'t Move'),nl,write('Fight or Run?'),nl)).
-a :- (encounter(0) -> (player(X,Y), X1 is X-1, (\+ block(X1,Y) -> asserta(player(X1,Y)), retract(player(X,Y)) ; write('Tidak Bisa')), (\+ tokemonpos(_,X1,Y) -> refresh_tokemonpos(1),! ; write('A wild Tokemon appears!'),nl,write('Fight or Run?'),nl,encounter)) ; (write('Can\'t Move'),nl,write('Fight or Run?'),nl)).
-s :- (encounter(0) -> (player(X,Y), Y1 is Y+1, (\+ block(X,Y1) -> asserta(player(X,Y1)), retract(player(X,Y)) ; write('Tidak Bisa')), (\+ tokemonpos(_,X,Y1) -> refresh_tokemonpos(1),! ; write('A wild Tokemon appears!'),nl,write('Fight or Run?'),nl,encounter)) ; (write('Can\'t Move'),nl,write('Fight or Run?'),nl)).
-d :- (encounter(0) -> (player(X,Y), X1 is X+1, (\+ block(X1,Y) -> asserta(player(X1,Y)), retract(player(X,Y)) ; write('Tidak Bisa')), (\+ tokemonpos(_,X1,Y) -> refresh_tokemonpos(1),! ; write('A wild Tokemon appears!'),nl,write('Fight or Run?'),nl,encounter)) ; (write('Can\'t Move'),nl,write('Fight or Run?'),nl)).
+w :-
+    (started(1), battle(0) ->
+        (encounter(0) ->
+            retract(not_available(1)),
+            asserta(not_available(0)), 
+            player(X,Y), 
+            Y1 is Y-1, 
+            (\+ block(X,Y1) -> 
+                (can_capture(1) ->
+                    retract(can_capture(1)),
+                    asserta(can_capture(0))
+                ;
+                    !
+                ),
+                asserta(player(X,Y1)), 
+                retract(player(X,Y)),  
+                (\+ tokemonpos(_,X,Y1) -> 
+                    refresh_tokemonpos(1),
+                    (gym(X,Y1) -> 
+                        write('Anda bergerak ke utara, anda berada di gym'),nl
+                    ;
+                        write('Anda bergerak ke utara, anda berada di tanah kosong'),nl
+                    )
+                ; 
+                    write('A wild Tokemon appears!'),nl,
+                    write('Fight or Run?'),nl,
+                    encounter
+                )
+            ;
+                write('Can\'t move there'),nl
+            ),
+            retract(not_available(0)),
+            asserta(not_available(1))
+        ; 
+            write('Can\'t Move'),nl,
+            write('Fight or Run?'),nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+a :- 
+    (started(1), battle(0) ->
+        (encounter(0) -> 
+            retract(not_available(1)),
+            asserta(not_available(0)),
+            player(X,Y), 
+            X1 is X-1, 
+            (\+ block(X1,Y) -> 
+                (can_capture(1) ->
+                    retract(can_capture(1)),
+                    asserta(can_capture(0))
+                ;
+                    !
+                ),
+                asserta(player(X1,Y)), 
+                retract(player(X,Y)),
+                (\+ tokemonpos(_,X1,Y) -> 
+                    refresh_tokemonpos(1),
+                    (gym(X1,Y) -> 
+                        write('Anda bergerak ke barat, anda berada di gym'),nl
+                    ;
+                        write('Anda bergerak ke barat, anda berada di tanah kosong'),nl
+                    )
+                ; 
+                    write('A wild Tokemon appears!'),nl,
+                    write('Fight or Run?'),nl,
+                    encounter
+                )
+            ;
+                write('Can\'t move there'),nl
+            ),
+            retract(not_available(0)),
+            asserta(not_available(1)) 
+        ; 
+            write('Can\'t Move'),nl,
+            write('Fight or Run?'),nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+s :- 
+    (started(1), battle(0) ->
+        (encounter(0) -> 
+            retract(not_available(1)),
+            asserta(not_available(0)),
+            player(X,Y), 
+            Y1 is Y+1, 
+            (\+ block(X,Y1) -> 
+                (can_capture(1) ->
+                    retract(can_capture(1)),
+                    asserta(can_capture(0))
+                ;
+                    !
+                ),
+                asserta(player(X,Y1)), 
+                retract(player(X,Y)), 
+                (\+ tokemonpos(_,X,Y1) -> 
+                    refresh_tokemonpos(1),
+                    (gym(X,Y1) -> 
+                        write('Anda bergerak ke selatan, anda berada di gym'),nl
+                    ;
+                        write('Anda bergerak ke selatan, anda berada di tanah kosong'),nl
+                    )
+                ; 
+                    write('A wild Tokemon appears!'),nl,
+                    write('Fight or Run?'),nl,
+                    encounter
+                )
+            ;
+                write('Can\'t move there'),nl
+            ),
+            retract(not_available(0)),
+            asserta(not_available(1)) 
+        ; 
+            write('Can\'t Move'),nl,
+            write('Fight or Run?'),nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+d :- 
+    (started(1), battle(0) ->
+        (encounter(0) ->
+            retract(not_available(1)),
+            asserta(not_available(0)),
+            player(X,Y), 
+            X1 is X+1, 
+            (\+ block(X1,Y) ->
+                (can_capture(1) ->
+                    retract(can_capture(1)),
+                    asserta(can_capture(0))
+                ;
+                    !
+                ), 
+                asserta(player(X1,Y)), 
+                retract(player(X,Y)), 
+                (\+ tokemonpos(_,X1,Y) -> 
+                    refresh_tokemonpos(1),
+                    (gym(X1,Y) -> 
+                        write('Anda bergerak ke timur, anda berada di gym'),nl
+                    ;
+                        write('Anda bergerak ke timur, anda berada di tanah kosong'),nl
+                    ) 
+                ; 
+                    write('A wild Tokemon appears!'),nl,
+                    write('Fight or Run?'),nl,
+                    encounter
+                )
+            ;
+                write('Can\'t move there'),nl
+            ),
+            retract(not_available(0)),
+            asserta(not_available(1)) 
+        ; 
+            write('Can\'t Move'),nl,
+            write('Fight or Run?'),nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
 
 
-check_fail :- (fail(1) -> write('Aril: Ho ho ho. You have failed to complete the missions. As for now, meet your fate and disappear from this world!');!),!.
-check_win :- (forall(tokemon(ID,_,_,legendary), tokemon_fainted(ID)) -> asserta(win(1)) ; fail).
-win :- write('Aril: Congratulation!!! You have helped me in defeating or capturing the 2 Legendary Tokemons. As promised, I won’t kill you and you’re free!'),!.
+heal :-
+    (started(1) ->
+        (heal_used(0) ->
+            ((player(X,Y), gym(X,Y)) -> 
+                retract(not_available(1)),
+                asserta(not_available(0)),
+                inventory(L), 
+                heal_inventory(L),
+                retract(heal_used(0)),
+                asserta(heal_used),
+                write('Your tokemon healed'),nl,
+                retract(not_available(0)),
+                asserta(not_available(1)) 
+            ; 
+                write('Anda harus berada di gym'),nl
+            )
+        ;
+            write('Heal already used!'),nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-heal :- ((player(X,Y), gym(X,Y)) -> inventory(L), heal_inventory(L) ; write('Command tidak dapat digunakan'),nl).
-heal_inventory([]) :- !.
-heal_inventory([ID|L]) :- heal(ID), heal_inventory(L).
+heal_inventory([]) :-
+    (not_available(0) ->
+        !
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-heal(ID) :- health(ID,Currhealth,Maxhealth), asserta(health(ID,Maxhealth,Maxhealth)), retract(health(ID,Currhealth,Maxhealth)),!.
+heal_inventory([ID|L]) :- 
+    (not_available(0) ->
+        heal(ID), 
+        heal_inventory(L)
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+heal(ID) :-
+    (not_available(0) ->
+        health(ID,Currhealth,Maxhealth), 
+        asserta(health(ID,Maxhealth,Maxhealth)), 
+        retract(health(ID,Currhealth,Maxhealth))
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+status :-
+    write('Your tokemon:'),nl,
+    inventory(L),
+    forall(member(M,L),(write_info(M),nl)),
+    write('Your enemy:'),nl,
+    forall((tokemon(ID,_,_,legendary),\+ tokemon_fainted(ID),\+ memberchk(ID,L)),(write_info(ID),nl)).

@@ -1,37 +1,8 @@
 :- dynamic(health/3).
-:- dynamic(usespattack/1).
-:- dynamic(battle/1).
 :- dynamic(tokemonpos/3).
-:- dynamic(encounter/1).
 :- dynamic(battleid/2).
-:- dynamic(enemy_fainted/1).
-:- dynamic(yours_fainted/1).
 :- dynamic(tokemon_fainted/1).
 :- dynamic(starter/1).
-:- dynamic(enemy_spattack/1).
-
-init_tokemon :- init_tokemon(1), asserta(encounter(0)), asserta(battle(0)).
-init_tokemon(ID) :- (ID < 10 -> ID1 is ID + 1,(inventory(L), asserta(health(ID,100,100)), \+ memberchk(ID,L) -> random_tokemonpos(ID), init_tokemon(ID1); init_tokemon(ID1));!).
-
-random_tokemonpos(ID) :- (ID < 10 -> (randomize, width(W), height(H), random(0,W,X), random(0,H,Y),
-            ((\+ block(X,Y), \+ player(X,Y), \+ gym(X,Y), \+ tokemonpos(_,X,Y)) -> asserta(tokemonpos(ID,X,Y)); random_tokemonpos(ID)))),!.
-
-refresh_tokemonpos(ID) :- (ID < 10, inventory(L), \+ memberchk(ID,L) -> ID1 is ID + 1,tokemon(ID,_,_,X),(X == legendary -> retract(tokemonpos(ID,_,_)), random_tokemonpos(ID), refresh_tokemonpos(ID1),! ;refresh_tokemonpos(ID1),!) ; !),!.
-
-encounter :- ((player(X,Y), tokemonpos(_,X,Y)) -> asserta(encounter(1)),retract(encounter(0)); !),!.
-
-fight :- (encounter(1) -> write('Choose your tokemon!'),nl,nl, avail_tokemon, init_battle,! ; !).
-run :- randomize, random(0, 10, RN),((RN > 4, encounter(1)) -> retract(encounter(1)), asserta(encounter(0)), write('You successfully escaped the Tokemon!') ; write('You failed to run!'),nl,fight).
-
-avail_tokemon :- inventory(L), write('Available Tokemons: ['), avail_tokemon(L), write(']').
-avail_tokemon([ID|[]]) :- (\+ tokemon_fainted(ID) -> tokemon(ID,Nama,_,_), write(Nama),! ; !).
-avail_tokemon([ID|L]) :- (\+ tokemon_fainted(ID) -> tokemon(ID,Nama,_,_), write(Nama), write(', '), avail_tokemon(L) ; avail_tokemon(L)).
-
-check_all_fainted :- inventory(L),(check_all_fainted(L) -> retract(fail(0)),asserta(fail(1)) ; fail).
-check_all_fainted([]) :- !.
-check_all_fainted([ID|L]) :- tokemon_fainted(ID), check_all_fainted(L). 
-
-pick(Nama) :- (tokemon(ID, Nama, _,_) -> (inventory(L), (memberchk(ID, L) -> player(X,Y), tokemonpos(ID2,X,Y), asserta(battleid(ID,ID2)), write('You: "'), write(Nama), write(' I choose you!"'),nl,nl,battlestats ; write('You don\'t have that tokemon.'))) ; write('Tokemon doesn\'t exist')),!.
 
 tokemon(1, groudon, fire, legendary).
 tokemon(2, charizard, fire, normal).
@@ -53,52 +24,546 @@ attackdamage(7,10).
 attackdamage(8,10).
 attackdamage(9,10).
 
-spdamage(1,100).
-spdamage(2,100).
-spdamage(3,100).
-spdamage(4,100).
-spdamage(5,100).
-spdamage(6,100).
-spdamage(7,100).
-spdamage(8,100).
-spdamage(9,100).
+spdamage(1,fireblast,100).
+spdamage(2,flamethrower,100).
+spdamage(3,ember,100).
+spdamage(4,surf,100).
+spdamage(5,hydropump,100).
+spdamage(6,bubble,100).
+spdamage(7,bubblebeam,100).
+spdamage(8,solarbeam,100).
+spdamage(9,razorleaf,100).
 
-init_battle :- (battle(0) -> asserta(usespattack(0)), retract(battle(0)), asserta(battle(1)), asserta(enemy_fainted(0)), asserta(yours_fainted(0))),!.
-battlestats :- battleid(ID1,ID2), tokemon(ID1,Nama1,Type1,_), tokemon(ID2,Nama2,Type2,_), health(ID1,Currhealth1,_), health(ID2,Currhealth2,_),
-            write(Nama2),nl, write('Health: '),write(Currhealth2),nl,write('Type: '),write(Type2),nl,nl,
-            write(Nama1),nl, write('Health: '),write(Currhealth1),nl,write('Type: '),write(Type1),!.
+init_tokemon :- 
+    (not_available(0) ->
+        init_tokemon(1)
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-enemy_random_attack :- randomize, random(0,10,RN), battleid(_,ID2), tokemon(ID2,Nama2,_,_), (RN < 4 -> nl,enemy_spattack ; nl,write(Nama2), write(' attacks!'),nl, enemy_attack),!.
+init_tokemon(ID) :- 
+    (not_available(0) ->
+        (ID < 10 -> 
+            ID1 is ID + 1,
+            inventory(L), 
+            asserta(health(ID,100,100)), 
+            (\+ memberchk(ID,L) -> 
+                random_tokemonpos(ID), 
+                init_tokemon(ID1)
+            ; 
+                init_tokemon(ID1)
+            )
+        ;
+            !
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-attack :- battleid(ID1,ID2),attack(ID1,ID2,1),(enemy_fainted(0) -> battlestats,nl; !), (win(1) -> !,enemy_random_attack),!.
-enemy_attack :- battleid(ID1,ID2),attack(ID2,ID1,0),(yours_fainted(0) -> battlestats,nl ; !),!.
+random_tokemonpos(ID) :- 
+    (not_available(0) ->
+        randomize, 
+        width(W), 
+        height(H), 
+        random(0,W,X), 
+        random(0,H,Y),
+        ((\+ block(X,Y), \+ player(X,Y), \+ gym(X,Y), \+ tokemonpos(_,X,Y)) -> 
+            asserta(tokemonpos(ID,X,Y))
+        ; 
+            random_tokemonpos(ID)
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-spattack :- battleid(ID1,ID2),spattack(ID1,ID2,1),(enemy_fainted(0) -> battlestats,nl ; !), (win(1) -> !,enemy_random_attack),!.
-enemy_spattack :- battleid(ID1,ID2),spattack(ID2,ID1,0),(yours_fainted(0) -> battlestats,nl ; !),!.
+refresh_tokemonpos(ID) :- 
+    (not_available(0) ->
+        (ID < 10 ->
+            ID1 is ID + 1,
+            inventory(L), 
+            (\+ memberchk(ID,L) -> 
+                tokemon(ID,_,_,X),
+                (X == legendary, \+ tokemon_fainted(ID) -> 
+                    retract(tokemonpos(ID,_,_)), 
+                    random_tokemonpos(ID), 
+                    refresh_tokemonpos(ID1) 
+                ;
+                    !
+                ) 
+            ;   
+                !
+            ),
+            refresh_tokemonpos(ID1)
+        ;
+            !
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-attack(ID1,ID2,Attacker) :- (battle(1) -> (attackdamage(ID1,Dmg), health(ID2,Currhealth,Maxhealth), tokemon(ID2,Nama2,_,_), 
-            (Currhealth =< Dmg -> Newhealth is 0, fainted(Attacker) ; Newhealth is Currhealth - Dmg,(Attacker = 1 -> write('You') ; write('It')),
-            write(' dealt '), write(Dmg), write(' damage to '), write(Nama2),nl,nl),
-            asserta(health(ID2, Newhealth, Maxhealth)),retract(health(ID2, Currhealth, Maxhealth))) ;
-            write('Command tidak dapat digunakan'),nl),!.
+encounter :- 
+    (not_available(0) ->
+        retract(encounter(0)),
+        asserta(encounter(1))
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-spattack(ID1,ID2,Attacker) :- (battle(1) -> ((Attacker = 1 -> usespattack(0) ; enemy_spattack(0)) -> (spdamage(ID1,Dmg), health(ID2,Currhealth,Maxhealth), tokemon(ID1,Nama1,Type1,_), tokemon(ID2,Nama2,Type2,_),
-            write(Nama1), write(' uses '),write('_____'), write('!'),nl,
-            ((Type1 == Type2 -> CalcDmg is Dmg) ;
-            ((Type1 == fire, Type2 == leaf) -> CalcDmg is round(Dmg * 1.5), write('It\'s super effective!'),nl ; ((Type1 == fire, Type2 == water) -> CalcDmg is round(Dmg * 0.5), write('It\'s not very effective...'),nl ; CalcDmg is Dmg)) ;
-            ((Type1 == water, Type2 == fire) -> CalcDmg is round(Dmg * 1.5), write('It\'s super effective!'),nl ; ((Type1 == water, Type2 == leaf) -> CalcDmg is round(Dmg * 0.5), write('It\'s not very effective...'),nl ; CalcDmg is Dmg)) ;
-            ((Type1 == leaf, Type2 == water) -> CalcDmg is round(Dmg * 1.5), write('It\'s super effective!'),nl ; ((Type1 == leaf, Type2 == fire) -> CalcDmg is round(Dmg * 0.5), write('It\'s not very effective...'),nl ; CalcDmg is Dmg))),
-            (Currhealth =< CalcDmg -> (Newhealth is 0, fainted(Attacker)),! ; (Newhealth is Currhealth - CalcDmg,
-            (Attacker = 1 -> write('You') ; write('It')),
-            write(' dealt '), write(CalcDmg), write(' damage to '), write(Nama2),nl,nl)),
-            asserta(health(ID2, Newhealth, Maxhealth)), retract(health(ID2, Currhealth, Maxhealth)), retract(usespattack(0)), asserta(usespattack(1))) ;
-            write('Special attacks can only be used once per battle!'),nl,!) ;
-            write('Command tidak dapat digunakan'),nl),!.
+init_battle :- 
+    (not_available(0) ->
+        retract(spattack_used(_)),
+        asserta(spattack_used(0)),
+        write('qwewq'), 
+        (enemy_spattack_used(0) ->
+            write('asdf'),
+            retract(enemy_spattack_used(_)), 
+            asserta(enemy_spattack_used(0))
+         ;
+            !
+        ),
+        retract(battle(0)), 
+        asserta(battle(1))
+    ;
+        write('Command not available')
+    ),
+    !.
 
-fainted(Attacker) :- battleid(ID1,ID2), (Attacker = 1 -> (tokemon(ID2,Nama2,_,_), retract(encounter(1)), asserta(encounter(0)), retract(tokemonpos(ID2,_,_)), retract(enemy_fainted(0)), asserta(enemy_fainted(1)), asserta(tokemon_fainted(ID2)), (check_win -> win,! ;
-            nl,write(Nama2),write(' faints! Do you want to capture '), write(Nama2), write('?'), write(' (capture/0 to capture '), write(Nama2), write(', otherwise move away.'),retract(battle(1)),asserta(battle(1)),!)) ;
-            retract(yours_fainted(0)), asserta(yours_fainted(1)), asserta(tokemon_fainted(ID1)),nl,write('Your Tokemon fainted!'),nl,nl,(check_all_fainted -> check_fail,! ; !)),!.
+write_info(ID) :- 
+    tokemon(ID,Name,Type,_), 
+    health(ID,Currhealth,_),
+    write(Name),nl,
+    write('Health: '), write(Currhealth), nl,
+    write('Type: '), write(Type),nl.
 
-capture :- battleid(_,ID2), inventory(L), length(L, N), ( N < 6 -> heal(ID2),retract(tokemonpos(ID2,_,_)),asserta(inventory([ID2|L])),retract(inventory(L)) ; write('You cannot capture another Tokemon! You have to drop one first.'),nl).
+battlestats :- 
+    (not_available(0) ->
+        battleid(ID1,ID2), 
+        write_info(ID1),nl,
+        write_info(ID2)
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
 
-drop(Nama) :- tokemon(ID,Nama,_,_), inventory(L), (memberchk(ID,L) -> delete(L,ID,L2), retract(inventory(L)), asserta(inventory(L2)), write('You have dropped '), write(nama) ; write('You don\'t have that tokemon'),nl).
+fight :- 
+    (encounter(1), battle(0) -> 
+        retract(not_available(1)),
+        asserta(not_available(0)),
+        write('Choose your tokemon!'), nl, nl, 
+        avail_tokemon, 
+        init_battle,
+        retract(not_available(0)),
+        asserta(not_available(1))
+    ; 
+        write('Command not available!'),nl
+    ),
+    !.
+
+run :-
+    (encounter(1), battle(0) ->
+        randomize, 
+        random(0, 10, RN),
+        (RN > 4 -> 
+            retract(encounter(1)), 
+            asserta(encounter(0)), 
+            write('You successfully escaped the Tokemon!') 
+        ; 
+            write('You failed to run!'), nl,
+            fight
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+avail_tokemon :-
+    (not_available(0) ->
+        inventory(L), 
+        write('Available Tokemons: ['), 
+        avail_tokemon(L), 
+        write(']')
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+avail_tokemon([ID|[]]) :-
+    (not_available(0) ->
+        tokemon(ID,Name,_,_),
+        write(Name) 
+    ;  
+        write('Command not available!'),nl    
+    )
+    .
+
+avail_tokemon([ID|L]) :-
+    (not_available(0) -> 
+        tokemon(ID,Name,_,_), 
+        write(Name), 
+        write(', '), 
+        avail_tokemon(L) 
+    ;
+        write('Command not available!'),nl
+    )
+    .
+
+pick(Name) :- 
+    (battle(1) ->
+        (tokemon(ID, Name, _,_) -> 
+            inventory(L), 
+            (memberchk(ID, L) -> 
+                retract(not_available(1)),
+                asserta(not_available(0)),
+                player(X,Y), 
+                tokemonpos(ID2,X,Y), 
+                asserta(battleid(ID,ID2)), 
+                write('You: "'), 
+                write(Name), 
+                write(' I choose you!"'), nl, nl,
+                battlestats,
+                retract(not_available(0)),
+                asserta(not_available(1))
+            ; 
+                write('You don\'t have that tokemon.'),nl
+            ) 
+        ; 
+            write('Tokemon doesn\'t exist'),nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+enemy_random_attack :-
+    (not_available(0) ->
+        randomize, 
+        random(0,10,RN), 
+        battleid(_,ID2), 
+        tokemon(ID2,Name2,_,_), 
+        (RN < 4 -> 
+            nl, 
+            enemy_spattack 
+        ; 
+            nl, 
+            write(Name2), 
+            write(' attacks!'), nl, 
+            enemy_attack
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+attack :- 
+    (battle(1) ->
+        retract(not_available(1)),
+        asserta(not_available(0)),
+        battleid(ID1,ID2),
+        attack(ID1,ID2,1),
+        nl,
+        (can_capture(0) ->
+            enemy_random_attack
+        ;
+            !
+        ),
+        retract(not_available(0)),
+        asserta(not_available(1))
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+enemy_attack :- 
+    (not_available(0) ->
+        battleid(ID1,ID2),
+        attack(ID2,ID1,0)
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+spattack :- 
+    (battle(1) ->
+        retract(not_available(1)),
+        asserta(not_available(0)),
+        battleid(ID1,ID2),
+        spattack(ID1,ID2,1),
+        nl,
+        (can_capture(0) ->
+            enemy_random_attack
+        ;
+            !
+        ),
+        retract(not_available(0)),
+        asserta(not_available(1))
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+enemy_spattack :- 
+    (not_available(0) ->
+        battleid(ID1,ID2),
+        spattack(ID2,ID1,0)
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+attack(ID1,ID2,Attacker) :- 
+    (battle(1), not_available(0) -> 
+        attackdamage(ID1,Dmg), 
+        health(ID2,Currhealth,Maxhealth), 
+        tokemon(ID2,Name2,_,_), 
+        (Currhealth =< Dmg -> 
+            Newhealth is 0,
+            asserta(health(ID2, Newhealth, Maxhealth)),
+            retract(health(ID2, Currhealth, Maxhealth)),
+            (Attacker = 1 ->
+                enemy_fainted
+            ;
+                yours_fainted
+            ) 
+        ; 
+            Newhealth is Currhealth - Dmg,
+            (Attacker = 1 -> 
+                write('You') 
+            ; 
+                write('It')
+            ),
+            write(' dealt '), 
+            write(Dmg),
+            write(' damage to '), 
+            write(Name2), nl, nl,
+
+            asserta(health(ID2, Newhealth, Maxhealth)),
+            retract(health(ID2, Currhealth, Maxhealth)),
+            battlestats
+        )   
+    ;
+        write('Command not available'), nl
+    ),
+    !.
+
+spattack(ID1,ID2,Attacker) :- 
+    (battle(1), not_available(0) -> 
+        ((Attacker = 1 -> spattack_used(0) ; enemy_spattack_used(0)) -> 
+            spdamage(ID1,SpName,Dmg), 
+            health(ID2,Currhealth,Maxhealth), 
+            tokemon(ID1,Name1,Type1,_), 
+            tokemon(ID2,Name2,Type2,_),
+            write(Name1), write(' uses '), write(SpName), write('!'), nl,
+            ((Type1 == fire,
+                ((Type2 == leaf,
+                CalcDmg is round(Dmg * 1.5), 
+                write('It\'s super effective!'), nl  
+                );
+                (Type2 == water,
+                CalcDmg is round(Dmg * 0.5), 
+                write('It\'s not very effective...'), nl
+                ))
+            );
+            (Type1 == water,
+                ((Type2 == fire,
+                CalcDmg is round(Dmg * 1.5), 
+                write('It\'s super effective!'), nl
+                );
+                (Type2 == leaf,
+                CalcDmg is round(Dmg * 0.5), 
+                write('It\'s not very effective...'), nl
+                ))
+            );
+            (Type1 == leaf,
+                ((Type2 == water,
+                CalcDmg is round(Dmg * 1.5), 
+                write('It\'s super effective!'), nl
+                );
+                (Type2 == fire,
+                CalcDmg is round(Dmg * 0.5), 
+                write('It\'s not very effective...'), nl
+                ))
+            );
+            (Type1 == Type2,
+                CalcDmg is Dmg)
+            ),
+            (Currhealth =< CalcDmg -> 
+                Newhealth is 0,
+                asserta(health(ID2, Newhealth, Maxhealth)), 
+                retract(health(ID2, Currhealth, Maxhealth)),
+                (Attacker = 1 ->
+                    enemy_fainted
+                ;
+                    yours_fainted
+                )
+            ; 
+                (Newhealth is Currhealth - CalcDmg,
+                (Attacker = 1 -> 
+                    write('You') 
+                ; 
+                    write('It')
+                ),
+                write(' dealt '), 
+                write(CalcDmg), 
+                write(' damage to '), 
+                write(Name2),nl,nl),
+
+                asserta(health(ID2, Newhealth, Maxhealth)), 
+                retract(health(ID2, Currhealth, Maxhealth)),
+                battlestats
+            ), 
+            (Attacker = 1 ->
+                retract(spattack_used(0)), 
+                asserta(spattack_used(1))
+            ;
+                retract(enemy_spattack_used(0)),
+                asserta(enemy_spattack_used(1))
+            )
+        ;
+            tokemon(ID1,Name1,_,_),
+            spdamage(ID1,SpName,_),
+            write(Name1), write(' uses '), write(SpName), write('!'), nl,
+            write('Special attacks can only be used once per battle!'), nl,
+            nl,battlestats
+        )
+    ;
+        write('Command not available!'), nl
+    ),
+    !.
+
+battle_end :- 
+    (not_available(0) ->
+        retract(battle(1)),
+        asserta(battle(0)),
+        retract(encounter(1)),
+        asserta(encounter(0)),
+        retract(enemy_spattack_used(_)),
+        retract(spattack_used(_)),
+        asserta(enemy_spattack_used(0)),
+        asserta(spattack_used(0))
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+enemy_fainted :-
+    (not_available(0) ->
+        battleid(_,ID2),
+        tokemon(ID2,Name2,_,_),
+        asserta(tokemon_fainted(ID2)),
+        retract(can_capture(0)),
+        asserta(can_capture(1)),
+        retract(tokemonpos(ID2,_,_)),
+        battle_end,
+        check_win,
+        (win(0) ->
+            nl, write(Name2), write(' faints! Do you want to capture '), write(Name2), write('?'), write(' (capture/0 to capture '), write(Name2), write(', otherwise move away.')
+        ;
+            !
+        )
+    ;
+        write('Command not available!'),nl
+
+    ),
+    !.
+
+yours_fainted :-
+    (not_available(0) ->
+        nl,write('Your tokemon fainted!'),nl,nl,
+        battleid(ID1,_),
+        asserta(tokemon_fainted(ID1)),
+        inventory(L),
+        delete(L,ID1,L2), 
+        retract(inventory(L)), 
+        asserta(inventory(L2)),
+        check_all_fainted,
+        (lose(0) ->
+            retract(battle(1)),
+            asserta(battle(0)),
+            retract(not_available(0)),
+            asserta(not_available(1)),
+            fight
+        ;
+            battle_end
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+check_win :- 
+    (not_available(0) ->
+        (forall(tokemon(ID,_,_,legendary), (inventory(L),(tokemon_fainted(ID) ; memberchk(ID,L)))) ->
+            retract(win(0)),
+            asserta(win(1)),
+            nl,
+            write('Aril: Congratulation!!! You have helped me in defeating or capturing the 2 Legendary Tokemons. As promised, I won’t kill you and you’re free!'),nl,nl,
+            write('Congratulation! You won the game.')
+        ; 
+            !
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+check_all_fainted :-
+    (not_available(0) ->
+        inventory(L),
+        (L = [] -> 
+            retract(lose(0)),
+            asserta(lose(1)),
+            write('Aril: Ho ho ho. You have failed to complete the missions. As for now, meet your fate and disappear from this world!'),nl
+        ;
+            !
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+capture :- 
+    (can_capture(1) ->
+        battleid(_,ID2),
+        inventory(L), 
+        length(L, N), 
+        ( N < 6 ->
+            retract(not_available(1)),
+            asserta(not_available(0)),
+            heal(ID2),
+            retract(tokemon_fainted(ID2)),
+            asserta(inventory([ID2|L])),
+            retract(inventory(L)),
+            retract(can_capture(1)),
+            asserta(can_capture(0)),
+            retract(not_available(0)),
+            asserta(not_available(1))
+        ; 
+            write('You cannot capture another Tokemon! You have to drop one first.'), nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
+
+drop(Name) :- 
+    (battle(0) ->
+        tokemon(ID,Name,_,_), 
+        inventory(L), 
+        (memberchk(ID,L) -> 
+            delete(L,ID,L2),
+            asserta(tokemon_fainted(ID)),
+            retract(inventory(L)), 
+            asserta(inventory(L2)), 
+            write('You have dropped '), write(Name),nl
+        ; 
+            write('You don\'t have that tokemon'),nl
+        )
+    ;
+        write('Command not available!'),nl
+    ),
+    !.
