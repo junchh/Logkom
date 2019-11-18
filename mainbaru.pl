@@ -44,3 +44,12 @@ help :-
     ;
         write('Command not available!'),nl
     ).
+
+quit :-
+    (started(1) ->
+        retract(not_available(1)),
+        asserta(not_available(0)),
+        end_game
+    ;
+        write('Command not available!'),nl
+    ).

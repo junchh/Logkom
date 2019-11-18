@@ -1,7 +1,5 @@
 :- dynamic(inventory/1).
 :- dynamic(player/2).
-:- dynamic(fail/1).
-:- dynamic(win/1).
 
 random_starter :-
     (not_available(0) ->
@@ -29,8 +27,7 @@ init_player :-
             asserta(player(X,Y)),
             random_starter,
             starter(ID),
-            asserta(inventory([ID])), 
-            asserta(fail(0)) 
+            asserta(inventory([ID])) 
         ; 
             init_player
         )
@@ -49,7 +46,8 @@ w :-
             (\+ block(X,Y1) -> 
                 (can_capture(1) ->
                     retract(can_capture(1)),
-                    asserta(can_capture(0))
+                    asserta(can_capture(0)),
+                    retract(battleid(_,_))
                 ;
                     !
                 ),
@@ -224,8 +222,7 @@ heal :-
                 asserta(heal_used),
                 write('Your tokemon healed'),nl,
                 retract(not_available(0)),
-                asserta(not_available(1)),
-                retract(battleid(_,_))
+                asserta(not_available(1))
             ; 
                 write('Anda harus berada di gym'),nl
             )

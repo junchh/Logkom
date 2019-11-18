@@ -118,9 +118,7 @@ init_battle :-
     (not_available(0) ->
         retract(spattack_used(_)),
         asserta(spattack_used(0)),
-        write('qwewq'), 
         (enemy_spattack_used(0) ->
-            write('asdf'),
             retract(enemy_spattack_used(_)), 
             asserta(enemy_spattack_used(0))
          ;
@@ -503,7 +501,9 @@ check_win :-
             asserta(win(1)),
             nl,
             write('Aril: Congratulation!!! You have helped me in defeating or capturing the 2 Legendary Tokemons. As promised, I won’t kill you and you’re free!'),nl,nl,
-            write('Congratulation! You won the game.')
+            write('Congratulation! You won the game.'),
+            retract(battleid(_,_)),
+            end_game
         ; 
             !
         )
@@ -518,7 +518,8 @@ check_all_fainted :-
         (L = [] -> 
             retract(lose(0)),
             asserta(lose(1)),
-            write('Aril: Ho ho ho. You have failed to complete the missions. As for now, meet your fate and disappear from this world!'),nl
+            write('Aril: Ho ho ho. You have failed to complete the missions. As for now, meet your fate and disappear from this world!'),nl,
+            end_game
         ;
             !
         )

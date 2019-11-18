@@ -2,7 +2,6 @@
 :- dynamic(width/1).
 :- dynamic(block/2).
 :- dynamic(gym/2).
-:- dynamic(not_available/1).
 :- initialization(asserta(started(0))).
 :- initialization(asserta(not_available(1))).
   
