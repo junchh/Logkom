@@ -25,18 +25,24 @@ attackdamage(8,10).
 attackdamage(9,10).
 
 spdamage(1,fireblast,100).
-spdamage(2,flamethrower,100).
-spdamage(3,ember,100).
+spdamage(2,flamethrower,80).
+spdamage(3,ember,80).
 spdamage(4,surf,100).
 spdamage(5,hydropump,100).
-spdamage(6,bubble,100).
-spdamage(7,bubblebeam,100).
-spdamage(8,solarbeam,100).
-spdamage(9,razorleaf,100).
+spdamage(6,bubble,80).
+spdamage(7,bubblebeam,80).
+spdamage(8,solarbeam,80).
+spdamage(9,razorleaf,80).
 
 init_tokemon :- 
     (not_available(0) ->
-        init_tokemon(1)
+        init_tokemon(1),
+        retract(health(1,_,_)),
+        retract(health(4,_,_)),
+        retract(health(5,_,_)),
+        asserta(health(1,160,160)),
+        asserta(health(4,200,200)),
+        asserta(health(5,180,180))
     ;
         write('Command not available!'),nl
     ),
@@ -556,15 +562,19 @@ capture :-
 drop(Name) :- 
     (battle(0) ->
         tokemon(ID,Name,_,_), 
-        inventory(L), 
-        (memberchk(ID,L) -> 
-            delete(L,ID,L2),
-            asserta(tokemon_fainted(ID)),
-            retract(inventory(L)), 
-            asserta(inventory(L2)), 
-            write('You have dropped '), write(Name),nl
-        ; 
-            write('You don\'t have that tokemon'),nl
+        inventory(L),
+        (length(L,N), N \= 1 -> 
+            (memberchk(ID,L) -> 
+                delete(L,ID,L2),
+                asserta(tokemon_fainted(ID)),
+                retract(inventory(L)), 
+                asserta(inventory(L2)), 
+                write('You have dropped '), write(Name),nl
+            ; 
+                write('You don\'t have that tokemon'),nl
+            )
+        ;
+            write('Can\'t drop tokemon!')
         )
     ;
         write('Command not available!'),nl
