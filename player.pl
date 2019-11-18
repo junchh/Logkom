@@ -91,7 +91,8 @@ a :-
             (\+ block(X1,Y) -> 
                 (can_capture(1) ->
                     retract(can_capture(1)),
-                    asserta(can_capture(0))
+                    asserta(can_capture(0)),
+                    retract(battleid(_,_))
                 ;
                     !
                 ),
@@ -133,7 +134,8 @@ s :-
             (\+ block(X,Y1) -> 
                 (can_capture(1) ->
                     retract(can_capture(1)),
-                    asserta(can_capture(0))
+                    asserta(can_capture(0)),
+                    retract(battleid(_,_))
                 ;
                     !
                 ),
@@ -175,7 +177,8 @@ d :-
             (\+ block(X1,Y) ->
                 (can_capture(1) ->
                     retract(can_capture(1)),
-                    asserta(can_capture(0))
+                    asserta(can_capture(0)),
+                    retract(battleid(_,_))
                 ;
                     !
                 ), 
@@ -221,7 +224,8 @@ heal :-
                 asserta(heal_used),
                 write('Your tokemon healed'),nl,
                 retract(not_available(0)),
-                asserta(not_available(1)) 
+                asserta(not_available(1)),
+                retract(battleid(_,_))
             ; 
                 write('Anda harus berada di gym'),nl
             )

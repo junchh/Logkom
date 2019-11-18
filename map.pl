@@ -1,6 +1,3 @@
-:- include('player.pl').
-:- include('tokemon.pl').
-:- include('states.pl').
 :- dynamic(height/1).
 :- dynamic(width/1).
 :- dynamic(block/2).
@@ -8,26 +5,7 @@
 :- dynamic(not_available/1).
 :- initialization(asserta(started(0))).
 :- initialization(asserta(not_available(1))).
-
-tes :- 
-    (started(0) ->
-        retract(not_available(1)),
-        asserta(not_available(0)),
-        randomize,
-        asserta(height(10)),
-        asserta(width(10)),
-        init_block,
-        init_gym,
-        init_player,
-        init_tokemon,
-        init_states,
-        map(0,0),
-        retract(not_available(0)),
-        asserta(not_available(1))
-    ;
-        write('Game already started!'), nl
-    ).
-
+  
 read_map_height :-  
     (not_available(0) ->
         write('Map height: '),

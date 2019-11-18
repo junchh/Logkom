@@ -85,8 +85,8 @@ refresh_tokemonpos(ID) :-
             ID1 is ID + 1,
             inventory(L), 
             (\+ memberchk(ID,L) -> 
-                tokemon(ID,_,_,X),
-                (X == legendary, \+ tokemon_fainted(ID) -> 
+                tokemon(ID,_,_,_),
+                (\+ tokemon_fainted(ID) -> 
                     retract(tokemonpos(ID,_,_)), 
                     random_tokemonpos(ID), 
                     refresh_tokemonpos(ID1) 
@@ -213,7 +213,7 @@ avail_tokemon([ID|L]) :-
     .
 
 pick(Name) :- 
-    (battle(1) ->
+    (\+ battleid(_,_), battle(1) ->
         (tokemon(ID, Name, _,_) -> 
             inventory(L), 
             (memberchk(ID, L) -> 
@@ -260,7 +260,7 @@ enemy_random_attack :-
     !.
 
 attack :- 
-    (battle(1) ->
+    (battleid(_,_), battle(1) ->
         retract(not_available(1)),
         asserta(not_available(0)),
         battleid(ID1,ID2),
@@ -288,7 +288,7 @@ enemy_attack :-
     !.
 
 spattack :- 
-    (battle(1) ->
+    (battleid(_,_),battle(1) ->
         retract(not_available(1)),
         asserta(not_available(0)),
         battleid(ID1,ID2),
@@ -484,9 +484,10 @@ yours_fainted :-
         (lose(0) ->
             retract(battle(1)),
             asserta(battle(0)),
-            retract(not_available(0)),
-            asserta(not_available(1)),
-            fight
+            retract(battleid(_,_)),
+            write('Choose your tokemon!'), nl, nl, 
+            avail_tokemon, 
+            init_battle
         ;
             battle_end
         )
@@ -541,7 +542,8 @@ capture :-
             retract(can_capture(1)),
             asserta(can_capture(0)),
             retract(not_available(0)),
-            asserta(not_available(1))
+            asserta(not_available(1)),
+            retract(battleid(_,_))
         ; 
             write('You cannot capture another Tokemon! You have to drop one first.'), nl
         )
