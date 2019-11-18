@@ -21,9 +21,6 @@ lalu Untuk legendary pokemon juga dituliskan menggunakan fakta, legendaryPokemon
 untuk probabilitas bertemu dengan pokemon, tiap pokemon diberi peluang diantara 0 sampai 1, lalu untuk mekanisme bertemunya
 digunakan random number generator. 
 
-untuk mekanisme battle mengikuti yang ada di spesifikasi, namun untuk damage yang di outputkan, akan di kombinasikan dengan random number generator juga
-jadi misal base damage = 10, maka yang dikeluarkan ada diantara 9 - 11, 11 (critical).
-
 Di game versi kami, setiap pokemon hanya ada 1, karena dengan single state seperti ini sepertinya lebih mudah di implementasikan. 
 
 Inventory di implementasikan dengan menggunakan list of pokemon, karena setiap pokemon hanya ada satu, maka tidak akan sulit untuk mencari pokemon di dalam inventorynya

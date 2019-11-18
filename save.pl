@@ -1,4 +1,4 @@
-:- dynamic(health/3).
+/*:- dynamic(health/3).
 :- dynamic(tokemonpos/3).
 :- dynamic(block/2).
 :- dynamic(player/2).
@@ -14,15 +14,11 @@ inventory([3,4,5]).
 player(1, 5).
 gym(4, 5).
 tokemon_fainted(3).
-tokemon_fainted(6).
+tokemon_fainted(6).*/
 
 prin(Id) :- health(Id, A, B), write('ID = '), write(Id), nl, write('Current = '), write(A), nl, write('Max = '), write(B), nl.
-change_health(A, B, C) :- retract(health(A, _, _)), asserta(health(A, B, C)).
-change_pos(A, B, C) :- retract(tokemonpos(A, _, _)), asserta(tokemonpos(A, B, C)).
-
-
-erase_allblock :- retractall(block(X, Y)), retractall(player(A, B)), retractall(gym(C, D)), retractall(tokemon_fainted(E)).
-
+change_health(A, B, C) :- asserta(health(A, B, C)).
+change_pos(A, B, C) :- asserta(tokemonpos(A, B, C)).
 loop2(Stream, A, B) :-
     (B > 1 ->
         (block(A, B) -> write(Stream, A), nl(Stream), write(Stream, B), nl(Stream);write('')), C is B - 1, loop2(Stream, A, C)
@@ -71,11 +67,10 @@ loop6(Stream, N) :-
         (tokemon_fainted(N) -> write(Stream, N), nl(Stream); write(''))
     ).
 
-read_block(File) :-
+read_blocks(File) :-
     open(File, read, Stream),
-    erase_allblock,
     read_integer(Stream, K),
-    get_all_fainted(Stream, K),
+    (K = 0 -> write(''); get_all_fainted(Stream, K)),
     read_integer(Stream, A),
     read_integer(Stream, B),
     read_integer(Stream, C),
@@ -128,7 +123,7 @@ write_block(File) :-
 
 write_health(File) :- 
     open(File, write, Stream),
-    write_health_recc(Stream, 1, 2),
+    write_health_recc(Stream, 1, 9),
     close(Stream).
 write_health_recc(Stream, M, N) :- 
     (M < N -> 
@@ -147,7 +142,7 @@ write_health_recc(Stream, M, N) :-
 
 read_health(File) :-
     open(File, read, Stream),
-    read_health_recc(Stream, 1, 2),
+    read_health_recc(Stream, 1, 9),
     close(Stream).
 
 read_health_recc(Stream, M, N) :-
@@ -167,26 +162,38 @@ read_health_recc(Stream, M, N) :-
 
 write_tokemonpos(File) :- 
     open(File, write, Stream),
-    write_tokemonpos_recc(Stream, 1, 2),
+    write_tokemonpos_recc(Stream, 1, 9),
     close(Stream).
 write_tokemonpos_recc(Stream, M, N) :- 
     (M < N -> 
-        tokemonpos(M, A, B),
-        write(Stream, M), nl(Stream),
-        write(Stream, A), nl(Stream),
-        write(Stream, B), nl(Stream),
+        (\+ tokemonpos(M,_,_) ->
+            write(Stream, M), nl(Stream),
+            write(Stream, 0), nl(Stream),
+            write(Stream, 0), nl(Stream)
+        ;
+            tokemonpos(M, A, B),
+            write(Stream, M), nl(Stream),
+            write(Stream, A), nl(Stream),
+            write(Stream, B), nl(Stream)
+        ),
         C is M+1,
         write_tokemonpos_recc(Stream, C, N)
-    ;
-        tokemonpos(M, A, B),
-        write(Stream, M), nl(Stream),
-        write(Stream, A), nl(Stream),
-        write(Stream, B)
+        ;
+        (\+ tokemonpos(M,_,_) ->
+            write(Stream, M), nl(Stream),
+            write(Stream, 0), nl(Stream),
+            write(Stream, 0), nl(Stream)
+        ;
+            tokemonpos(M, A, B),
+            write(Stream, M), nl(Stream),
+            write(Stream, A), nl(Stream),
+            write(Stream, B)
+        )
     ).
 
 read_tokemonpos(File) :-
     open(File, read, Stream),
-    read_tokemonpos_recc(Stream, 1, 2),
+    read_tokemonpos_recc(Stream, 1, 9),
     close(Stream).
 
 read_tokemonpos_recc(Stream, M, N) :-
@@ -194,26 +201,28 @@ read_tokemonpos_recc(Stream, M, N) :-
         read_integer(Stream, Id),
         read_integer(Stream, Curr),
         read_integer(Stream, Max),
-        change_pos(Id, Curr, Max),
+        (Curr = 0 -> write('');change_pos(Id, Curr, Max)),
         C is M+1,
         read_tokemonpos_recc(Stream, C, N)
     ;
         read_integer(Stream, Id),
         read_integer(Stream, Curr),
         read_integer(Stream, Max),
-        change_pos(Id, Curr, Max)
+        (Curr = 0 -> write('');change_pos(Id, Curr, Max))
     ).
 
 
 read_inventory(File) :-
     open(File, read, Stream),
-    get_char(Stream, Char1),
-    process_invent(Char1, Stream, [], L),
-    write(L),
+    read_integer(Stream, N),
+    process_invent(Stream, [], L, N),
+    asserta(inventory(L)),
     close(Stream).
 
 write_inventory(File, L) :-
     open(File, write, Stream),
+    length(L, X),
+    write(Stream, X), nl(Stream),
     write_invent_recc(L, Stream),
     close(Stream).
 
@@ -222,9 +231,16 @@ write_invent_recc([H|T], Stream) :-
     write(Stream, H), nl(Stream),
     write_invent_recc(T, Stream).
 
-process_invent(end_of_file, _, L, X) :- append(L, [], X), !.
 
-process_invent(Char, Stream, L, X) :-
-    (Char = '\n' -> get_char(Stream, Ch), process_invent(Ch, Stream, L, X); append(L, [Char], W), get_char(Stream, Ch), process_invent(Ch, Stream, W, X)).
 
+process_invent(Stream, L, X, N) :-
+    (N > 1 ->
+        read_integer(Stream, T),
+        append(L, [T], D),
+        C is N - 1,
+        process_invent(Stream, D, X, C)
+    ;
+        read_integer(Stream, T),
+        append(L, [T], X)
+    ).
 
